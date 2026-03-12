@@ -1,0 +1,56 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'name', 'email']) &&
+             data.uid is string &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             data.email is string;
+    }
+
+    function isValidPost(data) {
+      return data.keys().hasAll(['authorId', 'text', 'createdAt']) &&
+             data.authorId == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 5000;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['senderId', 'receiverId', 'text', 'createdAt']) &&
+             data.senderId == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 2000;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+    }
+
+    match /posts/{postId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidPost(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid && isValidPost(request.resource.data);
+      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+    }
+
+    match /messages/{messageId} {
+      allow read: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+    }
+
+    match /rooms/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if false; // Admin only via console for now
+    }
+  }
+}

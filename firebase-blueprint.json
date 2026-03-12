@@ -1,0 +1,77 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "country": { "type": "string" },
+        "city": { "type": "string" },
+        "bio": { "type": "string" },
+        "interests": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "name", "email"]
+    },
+    "Post": {
+      "title": "Post",
+      "description": "A public post in the feed",
+      "type": "object",
+      "properties": {
+        "authorId": { "type": "string" },
+        "authorName": { "type": "string" },
+        "authorPhoto": { "type": "string" },
+        "text": { "type": "string" },
+        "imageUrl": { "type": "string" },
+        "likes": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["authorId", "text", "createdAt"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A direct message between users",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "receiverId", "text", "createdAt"]
+    },
+    "Room": {
+      "title": "Room",
+      "description": "A themed discussion room",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "description": { "type": "string" },
+        "discordLink": { "type": "string" }
+      },
+      "required": ["name", "description"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/posts/{postId}": {
+      "schema": "Post",
+      "description": "Public feed posts"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Direct messages"
+    },
+    "/rooms/{roomId}": {
+      "schema": "Room",
+      "description": "Themed discussion rooms"
+    }
+  }
+}
