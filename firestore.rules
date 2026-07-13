@@ -11,46 +11,114 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "pplldassi@gmail.com" && request.auth.token.email_verified == true));
+    }
+
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'name', 'email']) &&
              data.uid is string &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
-             data.email is string;
+             data.email is string &&
+             (!('phoneNumber' in data) || data.phoneNumber is string) &&
+             (!('role' in data) || data.role in ['admin', 'user']) &&
+             (!('isOnline' in data) || data.isOnline is bool) &&
+             (!('lastSeen' in data) || data.lastSeen is string);
     }
 
     function isValidPost(data) {
       return data.keys().hasAll(['authorId', 'text', 'createdAt']) &&
-             data.authorId == request.auth.uid &&
+             data.authorId is string &&
              data.text is string && data.text.size() > 0 && data.text.size() < 5000;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['postId', 'authorId', 'text', 'createdAt']) &&
+             data.postId is string &&
+             data.authorId == request.auth.uid &&
+             data.text is string && data.text.size() > 0 && data.text.size() < 1000;
     }
 
     function isValidMessage(data) {
       return data.keys().hasAll(['senderId', 'receiverId', 'text', 'createdAt']) &&
              data.senderId == request.auth.uid &&
-             data.text is string && data.text.size() > 0 && data.text.size() < 2000;
+             data.text is string && data.text.size() < 2000 &&
+             (!('type' in data) || data.type in ['text', 'image', 'audio']) &&
+             (!('url' in data) || data.url is string);
+    }
+
+    function isValidRoomMessage(data) {
+      return data.keys().hasAll(['roomId', 'senderId', 'senderName', 'senderPhoto', 'text', 'createdAt']) &&
+             data.senderId == request.auth.uid &&
+             data.roomId is string && data.roomId.size() > 0 &&
+             data.text is string && data.text.size() < 2000 &&
+             (!('type' in data) || data.type in ['text', 'image', 'audio']) &&
+             (!('url' in data) || data.url is string);
     }
 
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role == 'user');
+      allow update: if isOwner(userId) && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role || isAdmin());
     }
 
     match /posts/{postId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && isValidPost(request.resource.data);
-      allow update: if isAuthenticated() && resource.data.authorId == request.auth.uid && isValidPost(request.resource.data);
-      allow delete: if isAuthenticated() && resource.data.authorId == request.auth.uid;
+      allow create: if isAuthenticated() && isValidPost(request.resource.data) && request.resource.data.authorId == request.auth.uid;
+      allow update: if isAuthenticated() && (
+        (resource.data.authorId == request.auth.uid && isValidPost(request.resource.data)) || 
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy'])) ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
+    }
+
+    match /comments/{commentId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidComment(request.resource.data);
+      allow update: if isAuthenticated() && (
+        (resource.data.authorId == request.auth.uid && isValidComment(request.resource.data)) ||
+        (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'likedBy'])) ||
+        isAdmin()
+      );
+      allow delete: if isAuthenticated() && (resource.data.authorId == request.auth.uid || isAdmin());
     }
 
     match /messages/{messageId} {
-      allow read: if isAuthenticated() && (resource.data.senderId == request.auth.uid || resource.data.receiverId == request.auth.uid);
+      allow read: if isAuthenticated() && (
+        resource.data.senderId == request.auth.uid || 
+        resource.data.receiverId == request.auth.uid ||
+        isAdmin()
+      );
       allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+    }
+
+    match /test/connection {
+      allow read: if true;
     }
 
     match /rooms/{roomId} {
       allow read: if isAuthenticated();
-      allow write: if false; // Admin only via console for now
+      allow create: if isAuthenticated(); // Allow seeding/creation for now
+      allow update, delete: if isAdmin();
+    }
+
+    match /room_messages/{messageId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidRoomMessage(request.resource.data);
     }
   }
 }
+
+// NOTE : Règles Firebase Storage configurées dans /storage.rules :
+// service firebase.storage {
+//   match /b/{bucket}/o {
+//     match /{allPaths=**} {
+//       allow read: if request.auth != null;
+//       allow write: if request.auth != null && request.resource.size < 5 * 1024 * 1024;
+//     }
+//   }
+// }
+

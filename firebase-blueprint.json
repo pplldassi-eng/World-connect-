@@ -8,6 +8,7 @@
         "uid": { "type": "string" },
         "name": { "type": "string" },
         "email": { "type": "string" },
+        "phoneNumber": { "type": "string" },
         "photoURL": { "type": "string" },
         "country": { "type": "string" },
         "city": { "type": "string" },
@@ -54,6 +55,20 @@
         "discordLink": { "type": "string" }
       },
       "required": ["name", "description"]
+    },
+    "RoomMessage": {
+      "title": "RoomMessage",
+      "description": "A message sent inside a themed discussion room",
+      "type": "object",
+      "properties": {
+        "roomId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "senderPhoto": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["roomId", "senderId", "text", "createdAt"]
     }
   },
   "firestore": {
@@ -72,6 +87,10 @@
     "/rooms/{roomId}": {
       "schema": "Room",
       "description": "Themed discussion rooms"
+    },
+    "/room_messages/{messageId}": {
+      "schema": "RoomMessage",
+      "description": "Messages inside themed discussion rooms"
     }
   }
 }
