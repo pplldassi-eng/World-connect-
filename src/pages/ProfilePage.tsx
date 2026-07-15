@@ -3,7 +3,7 @@ import { User as FirebaseUser, signOut } from 'firebase/auth';
 import { UserProfile } from '../types';
 import { auth, db, handleFirestoreError, OperationType } from '../firebase';
 import { doc, updateDoc } from 'firebase/firestore';
-import { MapPin, User, LogOut, Edit3, Save, X, Hash, Globe, Building } from 'lucide-react';
+import { MapPin, User, LogOut, Edit3, Save, X, Hash, Globe, Building, Shield } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface ProfilePageProps {
@@ -131,8 +131,18 @@ export const ProfilePage: React.FC<ProfilePageProps> = ({
             </div>
           </div>
 
-          {/* Sign Out Button */}
+          {/* Settings / Permissions */}
           <div className="mt-8">
+            <button 
+              onClick={() => {
+                localStorage.removeItem('wc_permissions_asked');
+                window.location.reload();
+              }}
+              className="w-full mb-3 py-3.5 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm shadow-md"
+            >
+              <Shield size={18} />
+              Réinitialiser les permissions
+            </button>
             <button 
               onClick={() => signOut(auth)}
               className="w-full py-3.5 bg-slate-950 hover:bg-red-950/20 text-red-500 border border-slate-800 hover:border-red-900/30 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 text-sm shadow-md"

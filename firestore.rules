@@ -93,6 +93,7 @@ service cloud.firestore {
         isAdmin()
       );
       allow create: if isAuthenticated() && isValidMessage(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || isAdmin());
     }
 
     match /test/connection {
@@ -102,12 +103,17 @@ service cloud.firestore {
     match /rooms/{roomId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated(); // Allow seeding/creation for now
-      allow update, delete: if isAdmin();
+      allow update, delete: if isAdmin() || (resource.data.createdBy == request.auth.uid);
     }
 
     match /room_messages/{messageId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && isValidRoomMessage(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.senderId == request.auth.uid || isAdmin());
+    }
+
+    match /calls/{callId} {
+      allow read, create, update, delete: if isAuthenticated();
     }
   }
 }

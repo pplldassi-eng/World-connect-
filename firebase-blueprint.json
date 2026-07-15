@@ -69,6 +69,24 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["roomId", "senderId", "text", "createdAt"]
+    },
+    "Call": {
+      "title": "Call",
+      "description": "A 1-to-1 audio or video call session",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "callerId": { "type": "string" },
+        "callerName": { "type": "string" },
+        "callerPhoto": { "type": "string" },
+        "receiverId": { "type": "string" },
+        "receiverName": { "type": "string" },
+        "receiverPhoto": { "type": "string" },
+        "type": { "type": "string" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "callerId", "receiverId", "type", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -91,6 +109,10 @@
     "/room_messages/{messageId}": {
       "schema": "RoomMessage",
       "description": "Messages inside themed discussion rooms"
+    },
+    "/calls/{callId}": {
+      "schema": "Call",
+      "description": "Real-time call sessions and signaling"
     }
   }
 }

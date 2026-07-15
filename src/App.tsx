@@ -34,6 +34,10 @@ import { MessagesPage } from './pages/MessagesPage';
 import { RoomsPage } from './pages/RoomsPage';
 import { RoomChatPage } from './pages/RoomChatPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { CallProvider } from './context/CallContext';
+import { CallModal } from './components/CallModal';
+import { PermissionModal } from './components/PermissionModal';
+import { requestPermissionsOnce } from './lib/agora';
 
 export default function App() {
   const [user, setUser] = useState<FirebaseUser | null>(null);
@@ -46,6 +50,11 @@ export default function App() {
   const [selectedChatUser, setSelectedChatUser] = useState<string | null>(null);
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
+  // Ask for permissions implicitly on boot if not already done
+  useEffect(() => {
+    requestPermissionsOnce();
+  }, []);
+
   // Authentication UI forms
   const [authMode, setAuthMode] = useState<'google' | 'email' | 'phone' | 'guest'>('google');
   const [email, setEmail] = useState('');
@@ -55,12 +64,17 @@ export default function App() {
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [authError, setAuthError] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
+  const [showPermissionModal, setShowPermissionModal] = useState(false);
 
   // Handle Authentication status
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
       if (u) {
+        if (!localStorage.getItem('permissionsGranted')) {
+          setShowPermissionModal(true);
+        }
+
         // Fetch or create user profile document in Firestore
         const docRef = doc(db, 'users', u.uid);
         try {
@@ -450,7 +464,8 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 md:pb-0 md:pl-20">
+      <CallProvider user={user} profile={profile}>
+        <div className="min-h-screen bg-slate-950 text-slate-100 pb-24 md:pb-0 md:pl-20">
         <Navbar 
           activeTab={activeTab} 
           setActiveTab={setActiveTab} 
@@ -518,6 +533,8 @@ export default function App() {
                 transition={{ duration: 0.2 }}
               >
                 <RoomsPage 
+                  user={user}
+                  profile={profile}
                   onJoinRoom={(roomId) => {
                     setSelectedRoomId(roomId);
                     setActiveTab('room_chat');
@@ -564,6 +581,9 @@ export default function App() {
           </AnimatePresence>
         </main>
       </div>
+      <CallModal />
+      <PermissionModal isOpen={showPermissionModal} onClose={() => setShowPermissionModal(false)} />
+      </CallProvider>
     </ErrorBoundary>
   );
 }

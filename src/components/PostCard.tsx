@@ -38,12 +38,18 @@ export const PostCard: React.FC<PostCardProps> = ({
     
     const q = query(
       collection(db, 'comments'), 
-      where('postId', '==', post.id), 
-      orderBy('createdAt', 'asc')
+      where('postId', '==', post.id)
     );
     
     const unsub = onSnapshot(q, (snap) => {
-      setComments(snap.docs.map(d => ({ id: d.id, ...d.data() } as PostComment)));
+      const fetchedComments = snap.docs.map(d => ({ id: d.id, ...d.data() } as PostComment));
+      // Trier chronologiquement (du plus ancien au plus récent) en mémoire pour éviter d'exiger un index composite
+      fetchedComments.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+      setComments(fetchedComments);
     }, (error) => {
       console.error("Error loading comments", error);
     });

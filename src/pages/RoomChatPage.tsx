@@ -67,12 +67,18 @@ export const RoomChatPage: React.FC<RoomChatPageProps> = ({
     if (!roomId) return;
     const messagesQuery = query(
       collection(db, 'room_messages'),
-      where('roomId', '==', roomId),
-      orderBy('createdAt', 'asc')
+      where('roomId', '==', roomId)
     );
 
     const unsubscribe = onSnapshot(messagesQuery, (snap) => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() } as RoomMessage)));
+      const fetchedMessages = snap.docs.map(d => ({ id: d.id, ...d.data() } as RoomMessage));
+      // Trier chronologiquement (du plus ancien au plus récent) en mémoire pour éviter d'exiger un index composite
+      fetchedMessages.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateA - dateB;
+      });
+      setMessages(fetchedMessages);
       setLoading(false);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'room_messages');

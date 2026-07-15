@@ -3,8 +3,9 @@ import { User as FirebaseUser } from 'firebase/auth';
 import { UserProfile, Message } from '../types';
 import { db, handleFirestoreError, OperationType } from '../firebase';
 import { collection, query, orderBy, limit, onSnapshot, addDoc, where, or, and, doc, deleteDoc } from 'firebase/firestore';
-import { Send, ChevronLeft, MessageSquare, History, Paperclip, Mic, Square, Loader2, X, Video, Trash } from 'lucide-react';
+import { Send, ChevronLeft, MessageSquare, History, Paperclip, Mic, Square, Loader2, X, Video, Trash, Phone } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useCall } from '../context/CallContext';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { motion, AnimatePresence } from 'motion/react';
@@ -22,6 +23,7 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
   selectedChatUser, 
   setSelectedChatUser 
 }) => {
+  const { startCall } = useCall();
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessageText, setNewMessageText] = useState('');
@@ -407,6 +409,39 @@ export const MessagesPage: React.FC<MessagesPageProps> = ({
                     : 'Hors ligne'}
               </p>
             </div>
+
+            {/* Boutons d'Appels Audio / Vidéo 1-1 */}
+            {chatUser && (
+              <div className="ml-auto flex items-center gap-2">
+                {/* Appel Audio */}
+                <button
+                  onClick={() => startCall(
+                    chatUser.uid, 
+                    'audio', 
+                    chatUser.name, 
+                    chatUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chatUser.uid}`
+                  )}
+                  className="p-2.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-green-400 rounded-xl transition-all active:scale-95 border border-slate-800"
+                  title="Appel Audio"
+                >
+                  <Phone size={17} />
+                </button>
+
+                {/* Appel Vidéo */}
+                <button
+                  onClick={() => startCall(
+                    chatUser.uid, 
+                    'video', 
+                    chatUser.name, 
+                    chatUser.photoURL || `https://api.dicebear.com/7.x/avataaars/svg?seed=${chatUser.uid}`
+                  )}
+                  className="p-2.5 bg-slate-800/60 hover:bg-slate-800 text-slate-400 hover:text-blue-400 rounded-xl transition-all active:scale-95 border border-slate-800"
+                  title="Appel Vidéo"
+                >
+                  <Video size={17} />
+                </button>
+              </div>
+            )}
           </div>
           
           {/* Zone de Messages */}

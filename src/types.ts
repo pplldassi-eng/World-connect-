@@ -53,6 +53,8 @@ export interface Room {
   description: string;
   imageUrl?: string;
   discordLink?: string;
+  createdBy?: string;
+  createdAt?: string;
 }
 
 export interface RoomMessage {
